@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Agent Dashboard</h2>
+
+<input id="msg" />
+
+<button onclick="send()">
+Send
+</button>
+
+<ul id="messages"></ul>
+
+<script>
+
+const socket =
+new WebSocket(
+"ws://localhost:8080/ws"
+);
+
+socket.onmessage =
+(event) => {
+
+const li =
+document.createElement("li");
+
+li.innerText =
+event.data;
+
+document
+.getElementById("messages")
+.appendChild(li);
+};
+
+function send(){
+
+const value =
+document.getElementById("msg")
+.value;
+
+socket.send(value);
+}
+
+</script>
+
+</body>
+</html>
