@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"github/indura08/web-socket-practice-project/managers"
 	"net/http"
 
@@ -32,4 +33,6 @@ func HanldeWS(hub *managers.Hub, w http.ResponseWriter, r *http.Request) {
 
 		hub.Broadcast <- msg
 	}
+
+	fmt.Print("Successfully disonnected to web socket")
 }
