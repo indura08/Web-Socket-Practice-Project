@@ -30,7 +30,7 @@ func (h *Hub) Run() {
 
 		case client := <-h.Unregister:
 			delete(h.Clients, client)
-			
+
 		case message := <-h.Broadcast:
 			for client := range h.Clients {
 				err := client.WriteMessage(
