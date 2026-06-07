@@ -1,0 +1,437 @@
+No, you normally do not write this line in the backend.
+
+const ws = new WebSocket("ws://localhost:5000");
+
+This is usually frontend/client-side code.
+
+Think about who is starting the conversation
+
+When you visit a website:
+
+Browser  -------------> Server
+
+The browser is the one that initiates the connection.
+
+The server sits there waiting.
+
+The same thing happens with WebSockets.
+
+Browser  -------------> WebSocket Server
+          Connect me!
+
+So the browser executes:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+which means:
+
+"Hello server, I want to open a WebSocket connection with you."
+
+What happens internally?
+
+When this line runs:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+the browser automatically sends an HTTP request first.
+
+Something like:
+
+GET / HTTP/1.1
+Host: localhost:5000
+Upgrade: websocket
+Connection: Upgrade
+
+Notice:
+
+Upgrade: websocket
+
+This is the browser saying:
+
+"I don't want a normal HTTP request. Please switch this connection to WebSocket."
+
+What does the backend do?
+
+The backend is waiting.
+
+For example:
+
+const wss = new WebSocket.Server({ server });
+
+wss.on("connection", (socket) => {
+    console.log("Client connected");
+});
+
+When the browser requests the upgrade:
+
+Browser  --------> Upgrade Request
+Server   --------> OK, WebSocket established
+
+Then:
+
+wss.on("connection")
+
+fires.
+
+Why doesn't the backend create the connection?
+
+Imagine a phone call.
+
+Can the receiver answer a phone call before someone calls?
+
+No.
+
+Someone must call first.
+
+Client (caller)
+       |
+       | Call
+       v
+Server (receiver)
+
+The browser creates:
+
+new WebSocket(...)
+
+The server receives it:
+
+wss.on("connection")
+Then what is the frontend variable ws?
+
+When you write:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+the browser creates its own connection object.
+
+Frontend
+---------
+ws
+
+Backend
+---------
+socket
+
+These represent the two ends of the same connection.
+
+Think of a phone call:
+
+Your phone  <=======>  My phone
+
+Your phone object:
+
+ws
+
+Server's phone object:
+
+socket
+
+Same connection.
+
+Different sides.
+
+Visualizing the entire flow
+Step 1
+
+Frontend:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+Browser says:
+
+I want to connect.
+Step 2
+
+Backend receives request:
+
+wss.on("connection", (socket) => {
+    console.log("Connected");
+});
+
+Server creates:
+
+socket
+Step 3
+
+Now both sides have an object.
+
+Browser                        Server
+
+ws  <===================>  socket
+Step 4
+
+Frontend sends:
+
+ws.send("Hello");
+Step 5
+
+Backend receives:
+
+socket.on("message", (msg) => {
+    console.log(msg);
+});
+
+Output:
+
+Hello
+Step 6
+
+Backend sends:
+
+socket.send("Hi back!");
+Step 7
+
+Frontend receives:
+
+ws.onmessage = (event) => {
+    console.log(event.data);
+};
+
+Output:
+
+Hi back!
+Why is this confusing?
+
+Because both sides have objects:
+
+// Frontend
+const ws = new WebSocket(...)
+
+and
+
+// Backend
+(socket) => { ... }
+
+Many beginners think these are two separate connections.
+
+They're not.
+
+They are two representations of the same WebSocket connection.
+
+Frontend object (ws)
+           |
+           | same connection
+           |
+Backend object (socket)
+
+A good mental model is:
+
+Frontend:
+    const ws = new WebSocket(...)
+
+means
+
+    "Please connect me to the server."
+
+Backend:
+    wss.on("connection", socket => {})
+
+means
+
+    "A client has connected. Here's the connection object for that client."
+
+Once this clicks, the rest of WebSockets (chat apps, notifications, live dashboards, multiplayer games) becomes much easier to understand.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Q: "okay so in this part: const new WebSocket("ws://localhost:5000"); what is meant by ws://? im confused in that case also?"
+
+A:
+
+Great question. Understanding ws:// is another piece that makes the WebSocket architecture click.
+
+When you see:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+the "ws://localhost:5000" part is the WebSocket URL.
+
+It's very similar to an HTTP URL.
+
+Compare HTTP and WebSocket
+
+Normal website:
+
+http://localhost:5000
+
+Secure website:
+
+https://localhost:5000
+
+WebSocket:
+
+ws://localhost:5000
+
+Secure WebSocket:
+
+wss://localhost:5000
+
+Notice the pattern:
+
+HTTP  -> http://
+HTTPS -> https://
+
+WebSocket -> ws://
+Secure WebSocket -> wss://
+What does ws:// actually mean?
+
+It tells the browser:
+
+"Connect using the WebSocket protocol."
+
+So:
+
+new WebSocket("ws://localhost:5000");
+
+means:
+
+"Open a WebSocket connection to the server running on localhost at port 5000."
+
+Breaking the URL apart
+ws://localhost:5000
+│    │         │
+│    │         └── Port
+│    └──────────── Host
+└───────────────── Protocol
+Protocol
+ws://
+
+Use the WebSocket protocol.
+
+Host
+localhost
+
+Connect to my own machine.
+
+Port
+5000
+
+Connect to port 5000.
+
+Why not use http://?
+
+Because:
+
+new WebSocket("http://localhost:5000");
+
+is invalid.
+
+The browser expects a WebSocket URL.
+
+Just like:
+
+<img src="image.jpg">
+
+expects an image file, not a PDF.
+
+Similarly:
+
+new WebSocket(...)
+
+expects:
+
+ws://
+
+or
+
+wss://
+But didn't you say WebSocket starts as HTTP?
+
+Yes! This is the part that confuses many developers.
+
+Even though you write:
+
+new WebSocket("ws://localhost:5000");
+
+the browser internally begins with an HTTP request:
+
+GET / HTTP/1.1
+Host: localhost:5000
+Upgrade: websocket
+Connection: Upgrade
+
+The browser automatically does this.
+
+You don't see it.
+
+Then the server replies:
+
+HTTP/1.1 101 Switching Protocols
+
+After that:
+
+HTTP
+  ↓ Upgrade
+WebSocket
+
+The connection becomes a real WebSocket connection.
+
+So:
+
+ws://
+
+doesn't mean:
+
+"Never use HTTP."
+
+It means:
+
+"Start a WebSocket connection, performing the necessary HTTP upgrade automatically."
+
+Real-world example
+
+Suppose your frontend runs on:
+
+http://localhost:3000
+
+and your backend runs on:
+
+http://localhost:5000
+
+You might have:
+
+// REST API
+fetch("http://localhost:5000/users");
+
+for normal request/response operations.
+
+And:
+
+// Real-time connection
+const ws = new WebSocket("ws://localhost:5000");
+
+for live updates.
+
+Same backend server.
+
+Different protocols.
+
+Frontend
+   |
+   | fetch()
+   v
+HTTP API
+
+Frontend
+   |
+   | new WebSocket()
+   v
+WebSocket Connection
+A practical mental model
+
+Think of URLs like this:
+
+http://  -> "Send a normal web request"
+
+https:// -> "Send a secure web request"
+
+ws://    -> "Open a WebSocket connection"
+
+wss://   -> "Open a secure WebSocket connection"
+
+So when you write:
+
+const ws = new WebSocket("ws://localhost:5000");
+
+you're essentially telling the browser:
+
+"Go to localhost on port 5000 and establish a WebSocket connection with that server."
